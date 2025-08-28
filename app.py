@@ -12,7 +12,7 @@ st.title("Earnings Drift Backtest")
 
 with st.sidebar:
     st.header("Inputs")
-    tickers_str = st.text_input("Tickers comma separated", value="AAPL, MSFT, NVDA, AMZN, META, AVGO, GOOGL")
+    tickers_str = st.text_input("Tickers comma separated", value="EQIX, AVG, META, GE, HWM, UBER, APP")
     benchmark = st.text_input("Benchmark ETF", value="SPY")
     start_date = st.date_input("Start date", value=pd.to_datetime("2010-01-01")).strftime("%Y-%m-%d")
     end_date = st.date_input("End date", value=pd.to_datetime("today")).strftime("%Y-%m-%d")
