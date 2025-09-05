@@ -191,7 +191,11 @@ def run_backtest_baseline(cfg):
                 "r_hold": r_hold
             })
 
+    if trade_ledger:
     trades = pd.DataFrame(trade_ledger).sort_values(["entry_date", "ticker"]).reset_index(drop=True)
+else:
+    trades = pd.DataFrame(columns=["ticker", "earn_date", "entry_date", "exit_date", "r_3m", "r_hold"])
+
 
     daily_index = prices.index[(prices.index >= start_date) & (prices.index <= end_date)]
     equity = pd.Series(index=daily_index, dtype=float, data=1.0)
