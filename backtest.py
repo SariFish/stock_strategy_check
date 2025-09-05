@@ -139,3 +139,89 @@ def run_backtest(cfg):
     }
 
     return stats, trades, equity, bench_equity
+
+def run_backtest_baseline(cfg):
+    tickers = list(dict.fromkeys(cfg["tickers"]))
+    bench = cfg["benchmark"]
+    all_tickers = sorted(set(tickers + [bench]))
+    end_date = safe_end_date(cfg["end_date"])
+    start_date = pd.Timestamp(cfg["start_date"])
+    pad_days = int(cfg.get("calendar_pad_days", 0))
+    effective_end_for_signals = end_date - pd.Timedelta(days=pad_days) if pad_days > 0 else end_date
+
+    prices = download_prices(all_tickers, start_date - pd.Timedelta(days=500), end_date + pd.Timedelta(days=2))
+    bench_prices = prices[bench].dropna()
+
+    trade_ledger = []
+    for tkr in tickers:
+        px = prices[tkr].dropna()
+        if px.empty:
+            continue
+        if (px.index.max() - px.index.min()).days < cfg["min_price_history_days"]:
+            continue
+
+        earn_dates = get_earnings_dates(tkr, start_date, effective_end_for_signals)
+        for E in earn_dates:
+            E = pd.Timestamp(E).normalize()
+            if E < px.index.min() or E > effective_end_for_signals:
+                continue
+            entry_dt = E + relativedelta(months=3)
+            exit_dt = E + relativedelta(months=12)
+            try:
+                entry_ts = px.index[px.index.get_indexer([entry_dt], method="nearest")[0]]
+                exit_ts = px.index[px.index.get_indexer([exit_dt], method="nearest")[0]]
+            except Exception:
+                continue
+            if entry_ts >= exit_ts or entry_ts >= prices.index.max():
+                continue
+            entry_price = float(px.loc[entry_ts])
+            exit_price = float(px.loc[exit_ts])
+            r_3m = pct_return(px, E, entry_ts)
+            r_hold = float(exit_price / entry_price - 1.0)
+            trade_ledger.append({
+                "ticker": tkr,
+                "earn_date": E.date().isoformat(),
+                "entry_date": pd.Timestamp(entry_ts).date().isoformat(),
+                "exit_date": pd.Timestamp(exit_ts).date().isoformat(),
+                "r_3m": r_3m,
+                "r_hold": r_hold
+            })
+
+    trades = pd.DataFrame(trade_ledger).sort_values(["entry_date", "ticker"]).reset_index(drop=True)
+
+    daily_index = prices.index[(prices.index >= start_date) & (prices.index <= end_date)]
+    equity = pd.Series(index=daily_index, dtype=float, data=1.0)
+
+    positions = []
+    for _, row in trades.iterrows():
+        seg = prices[row["ticker"]].loc[pd.Timestamp(row["entry_date"]):pd.Timestamp(row["exit_date"])].pct_change().fillna(0.0)
+        positions.append(seg)
+    if positions:
+        pos_df = pd.concat(positions, axis=1)
+        daily_ret = pos_df.mean(axis=1).reindex(daily_index).fillna(0.0)
+        equity = (1.0 + daily_ret).cumprod()
+
+    bench_seg = bench_prices.reindex(daily_index).ffill().pct_change().fillna(0.0)
+    bench_equity = (1.0 + bench_seg).cumprod()
+
+    def sharpe(returns, freq=252):
+        mu = returns.mean() * freq
+        sig = returns.std(ddof=0) * math.sqrt(freq)
+        return float(mu / sig) if sig > 0 else np.nan
+
+    bt_ret = equity.pct_change().dropna()
+    bm_ret = bench_equity.pct_change().dropna()
+    stats = {
+        "trades": int(len(trades)),
+        "win_rate": float((trades["r_hold"] > 0).mean()) if len(trades) else np.nan,
+        "avg_trade_return": float(trades["r_hold"].mean()) if len(trades) else np.nan,
+        "median_trade_return": float(trades["r_hold"].median()) if len(trades) else np.nan,
+        "equity_cagr": float((equity.iloc[-1]) ** (252.0 / len(equity)) - 1.0) if len(equity) > 1 else np.nan,
+        "bench_cagr": float((bench_equity.iloc[-1]) ** (252.0 / len(bench_equity)) - 1.0) if len(bench_equity) > 1 else np.nan,
+        "sharpe": sharpe(bt_ret),
+        "bench_sharpe": sharpe(bm_ret),
+        "max_drawdown": float(((equity / equity.cummax()) - 1.0).min()) if len(equity) else np.nan,
+        "bench_max_drawdown": float(((bench_equity / bench_equity.cummax()) - 1.0).min()) if len(bench_equity) else np.nan
+    }
+
+    return stats, trades, equity, bench_equity
