@@ -93,9 +93,9 @@ if run_btn:
         label="Earnings Drift Strategy",
         color="#2ecc40",  # ירוק מודרני (tab:green אפשר גם)
         linewidth=3,
-        marker="o",
-        markevery=50,
-        markersize=6,
+        # marker="o",
+        # markevery=50,
+        # markersize=6,
         alpha=0.9
     )
     
