@@ -85,14 +85,47 @@ if run_btn:
     st.dataframe(summary, use_container_width=True)
 
     st.subheader("Equity Curve")
-    fig, ax = plt.subplots(figsize=(10, 5))
-    equity.plot(ax=ax, label="Earnings Drift Strategy", color="limegreen", linewidth=2.5)
-    baseline_equity.plot(ax=ax, label="Baseline Buy&Hold", color="royalblue", linewidth=1)
-    bench_equity.plot(ax=ax, label=cfg["benchmark"], color="orange", linewidth=1, linestyle="--")
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Portfolio Value")
-    ax.set_title("Equity Curve Comparison")
-    ax.legend()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    # Earnings Drift - ירוק מודגש + עבה + markers
+    equity.plot(
+        ax=ax,
+        label="Earnings Drift Strategy",
+        color="#2ecc40",  # ירוק מודרני (tab:green אפשר גם)
+        linewidth=3,
+        marker="o",
+        markevery=50,
+        markersize=6,
+        alpha=0.9
+    )
+    
+    # Baseline - כחול דק
+    baseline_equity.plot(
+        ax=ax,
+        label="Baseline Buy&Hold",
+        color="#0080ff",  # כחול רווי (tab:blue אפשר גם)
+        linewidth=2,
+        linestyle="-",
+        alpha=0.8
+    )
+    
+    # SPY - כתום עבה ומקווקו
+    bench_equity.plot(
+        ax=ax,
+        label="SPY",
+        color="#ff851b",  # כתום מודרני (tab:orange אפשר גם)
+        linewidth=2.5,
+        linestyle="--",
+        alpha=0.7
+    )
+    
+    ax.set_xlabel("Date", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Portfolio Value", fontsize=14, fontweight="bold")
+    ax.set_title("Equity Curve Comparison", fontsize=18, fontweight="bold")
+    ax.grid(True, which="both", linestyle="--", linewidth=0.5, color="gray", alpha=0.2)
+    ax.legend(fontsize=13, frameon=True, fancybox=True, framealpha=0.9, borderpad=1)
+    plt.tight_layout()
+    
     st.pyplot(fig)
 
     st.subheader("Trades – Earnings Drift")
