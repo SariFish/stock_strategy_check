@@ -86,9 +86,9 @@ if run_btn:
 
     st.subheader("Equity Curve")
     fig, ax = plt.subplots(figsize=(10, 5))
-    equity.plot(ax=ax, label="Earnings Drift Strategy")
-    baseline_equity.plot(ax=ax, label="Baseline Buy&Hold")
-    bench_equity.plot(ax=ax, label=cfg["benchmark"])
+    equity.plot(ax=ax, label="Earnings Drift Strategy", color="limegreen", linewidth=2.5)
+    baseline_equity.plot(ax=ax, label="Baseline Buy&Hold", color="royalblue", linewidth=2)
+    bench_equity.plot(ax=ax, label=cfg["benchmark"], color="orange", linewidth=2, linestyle="--")
     ax.set_xlabel("Date")
     ax.set_ylabel("Portfolio Value")
     ax.set_title("Equity Curve Comparison")
