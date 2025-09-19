@@ -34,7 +34,7 @@ def download_prices(unique_tickers, start_date, end_date):
 def get_earnings_dates(ticker, start_date, end_date):
     tk = yf.Ticker(ticker)
     try:
-        df = tk.get_earnings_dates(limit=240)
+        df = tk.get_earnings_dates(limit=100)
     except Exception:
         return []
     if df is None or df.empty:
